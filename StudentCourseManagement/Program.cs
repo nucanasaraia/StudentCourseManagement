@@ -1,5 +1,8 @@
 using FluentValidation;
+using StudentCourseManagement.Extensions;
 using StudentCourseManagement.Middleware;
+using StudentCourseManagement.Services.Implementations;
+using StudentCourseManagement.Services.Interfaces;
 using StudentCourseManagement.Validations;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,6 +13,13 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// Use extension
+builder.Services.ConfigureSqlContext(builder.Configuration);
+
+builder.Services.AddAutoMapper(typeof(Program));
+
+builder.Services.AddScoped<IStudentService, StudentService>();
 
 builder.Services.AddValidatorsFromAssemblyContaining<AddStudentValidator>();
 

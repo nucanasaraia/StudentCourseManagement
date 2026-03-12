@@ -92,5 +92,6 @@ namespace StudentCourseManagement.Services.Implementations
             {
                 return ApiResponseFactory.CreateErrorResponse<CourseDto>(ex.Message);
             }
+        }
     }
 }
