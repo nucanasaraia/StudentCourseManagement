@@ -1,15 +1,15 @@
-﻿using Microsoft.EntityFrameworkCore;
-using StudentCourseManagement.Data;
-using System;
+﻿using StudentCourseManagement.Services.Interfaces;
+using StudentCourseManagement.Services.Implementations;
 
 namespace StudentCourseManagement.Extensions
 {
     public static class ServiceExtensions
     {
-        public static void ConfigureSqlContext(this IServiceCollection services, IConfiguration configuration)
+        public static void ConfigureServices(this IServiceCollection services)
         {
-            services.AddDbContext<DataContext>(options =>
-                options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
+            services.AddScoped<IStudentService, StudentService>();
+            services.AddScoped<ICourseService, CourseService>();
+            services.AddScoped<IEnrollmentService, EnrollmentService>();
         }
     }
 }
