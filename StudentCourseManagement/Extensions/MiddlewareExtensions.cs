@@ -15,7 +15,6 @@ namespace StudentCourseManagement.Extensions
             }
 
             app.UseHttpsRedirection();
-            app.UseAuthorization();
             app.MapControllers();
         }
     }

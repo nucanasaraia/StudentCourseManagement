@@ -12,6 +12,12 @@ builder.Services.ConfigureMapping();
 
 var app = builder.Build();
 
+
+builder.Services.ConfigureJwt(builder.Configuration);
+
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.ConfigureMiddleware();
 
 app.Run();

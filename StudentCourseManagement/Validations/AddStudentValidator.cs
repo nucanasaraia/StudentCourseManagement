@@ -7,7 +7,7 @@ namespace StudentCourseManagement.Validations
     {
         public AddStudentValidator()
         {
-            RuleFor(x => x.Name)
+            RuleFor(x => x.UserName)
                 .NotEmpty()
                 .Length(2, 50)
                 .WithMessage("Name lenght should be between 2 and 50");
