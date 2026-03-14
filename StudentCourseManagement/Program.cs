@@ -2,19 +2,19 @@ using StudentCourseManagement.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Services
 builder.Services.AddControllers();
-
 builder.Services.ConfigureDatabase(builder.Configuration);
 builder.Services.ConfigureServices();
 builder.Services.ConfigureSwagger();
 builder.Services.ConfigureValidation();
-builder.Services.ConfigureMapping();    
+builder.Services.ConfigureMapping();
+builder.Services.ConfigureJwt(builder.Configuration);
+builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-
-builder.Services.ConfigureJwt(builder.Configuration);
-
+// Middleware
 app.UseAuthentication();
 app.UseAuthorization();
 

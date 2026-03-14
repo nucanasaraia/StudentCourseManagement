@@ -1,14 +1,16 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Reflection.PortableExecutable;
+using System.Runtime.Intrinsics.X86;
 using System.Text;
 
 public static class JwtExtensions
-{
+{       //When a request comes with a JWT token, this is how you should check if it’s valid.
     public static IServiceCollection ConfigureJwt(this IServiceCollection services, IConfiguration configuration)
     {
         var key = Encoding.UTF8.GetBytes(configuration["Jwt:Key"]);
 
+        // Use JWT Bearer tokens as the authentication method. standard way JWT tokens are sent.
         services.AddAuthentication(options =>
         {
             options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;

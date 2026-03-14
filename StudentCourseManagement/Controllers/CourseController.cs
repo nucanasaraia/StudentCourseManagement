@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using StudentCourseManagement.Requests;
 using StudentCourseManagement.Services.Interfaces;
@@ -23,6 +24,7 @@ namespace StudentCourseManagement.Controllers
         }
 
         [HttpPost()]
+        [Authorize]
         public async Task<ActionResult> AddCourse(AddCourse request)
         {
             var course = await _courseService.CreateCourse(request);
@@ -30,6 +32,7 @@ namespace StudentCourseManagement.Controllers
         }
 
         [HttpDelete()]
+        [Authorize]
         public async Task<ActionResult> DeleteCourse(int id)
         {
             var course = await _courseService.DeleteCourse(id);
@@ -37,6 +40,7 @@ namespace StudentCourseManagement.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize]
         public async Task<ActionResult> UpdateCourse(int id, AddCourse request)
         {
             var course = await _courseService.UpdateCourse(id, request);

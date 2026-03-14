@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using StudentCourseManagement.Requests;
 using StudentCourseManagement.Services.Interfaces;
@@ -7,6 +8,7 @@ namespace StudentCourseManagement.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class EnrollmentController : ControllerBase
     {
         private readonly IEnrollmentService _enrollmentService;
@@ -16,6 +18,7 @@ namespace StudentCourseManagement.Controllers
         }
 
         [HttpPost()]
+
         public async Task<ActionResult> AddEnrollement(AddEnrollment request)
         {
             var enrollment = await _enrollmentService.CreateEnrollment(request);

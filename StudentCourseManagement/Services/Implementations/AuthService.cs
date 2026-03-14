@@ -25,13 +25,25 @@ public class AuthService : IAuthService
 
     public async Task<ApiResponse<string>> Register(StudentDto dto)
     {
-        if (await _context.Students.AnyAsync(u => u.Username == dto.Username))
-            return ApiResponseFactory.CreateErrorResponse<string>("User already exists");
+        var username = dto.Username.Trim();
+        var email = dto.Email.Trim().ToLower();
+
+        var existingUser = await _context.Students
+            .FirstOrDefaultAsync(u => u.Username == username || u.Email == email);
+
+        if (existingUser != null)
+        {
+            if (existingUser.Username == username)
+                return ApiResponseFactory.CreateErrorResponse<string>("Username already exists");
+
+            if (existingUser.Email == email)
+                return ApiResponseFactory.CreateErrorResponse<string>("Email already exists");
+        }
 
         var user = new Student
         {
-            Username = dto.Username,
-            Email = dto.Email
+            Username = username,
+            Email = email
         };
 
         user.PasswordHash = _passwordHasher.HashPassword(user, dto.Password);

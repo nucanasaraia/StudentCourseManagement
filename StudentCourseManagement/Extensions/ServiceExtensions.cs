@@ -10,6 +10,7 @@ namespace StudentCourseManagement.Extensions
             services.AddScoped<IStudentService, StudentService>();
             services.AddScoped<ICourseService, CourseService>();
             services.AddScoped<IEnrollmentService, EnrollmentService>();
+            services.AddScoped<IAuthService, AuthService>();
         }
     }
 }
