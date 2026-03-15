@@ -1,3 +1,4 @@
+using StudentCourseManagement.Configurations;
 using StudentCourseManagement.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -11,6 +12,8 @@ builder.Services.ConfigureValidation();
 builder.Services.ConfigureMapping();
 builder.Services.ConfigureJwt(builder.Configuration);
 builder.Services.AddAuthorization();
+builder.Services.Configure<SmtpSettings>(
+    builder.Configuration.GetSection("SmtpSettings"));
 
 var app = builder.Build();
 
