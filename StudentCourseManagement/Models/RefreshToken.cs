@@ -1,6 +1,4 @@
-﻿using StudentCourseManagement.Models;
-
-namespace StudentCourseManagement.CORE
+﻿namespace StudentCourseManagement.Models
 {
     public class RefreshToken
     {
