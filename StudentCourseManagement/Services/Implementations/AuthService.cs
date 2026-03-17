@@ -62,14 +62,23 @@ public class AuthService : IAuthService
         if (user == null)
             return ApiResponseFactory.CreateErrorResponse<string>("User not found");
 
+        if (user.VerificationAttempts >= 5)
+            return ApiResponseFactory.CreateErrorResponse<string>("Too many attempts");
+
         if (user.VerificationCode != dto.Code)
+        {
+            user.VerificationAttempts++;
+            await _context.SaveChangesAsync();
+
             return ApiResponseFactory.CreateErrorResponse<string>("Invalid code");
+        }
 
         if (user.VerificationCodeExpires < DateTime.UtcNow)
             return ApiResponseFactory.CreateErrorResponse<string>("Code expired");
 
         user.EmailVerified = true;
         user.VerificationCode = null;
+        user.VerificationAttempts = 0;
         user.VerificationCodeExpires = null;
 
         await _context.SaveChangesAsync();
@@ -79,8 +88,10 @@ public class AuthService : IAuthService
 
     public async Task<ApiResponse<UserToken>> Login(LoginDto dto)
     {
-        var user = await _context.Students.FirstOrDefaultAsync(x => x.Username == dto.Username);
         var username = dto.Username.Trim().ToLower();
+
+        var user = await _context.Students
+            .FirstOrDefaultAsync(x => x.Username.ToLower() == username);
 
         if (user == null)
             return ApiResponseFactory.CreateErrorResponse<UserToken>("User not found");
@@ -94,11 +105,13 @@ public class AuthService : IAuthService
             return ApiResponseFactory.CreateErrorResponse<UserToken>("Invalid password");
 
         var accessToken = _tokenService.GenerateAccessToken(user);
+
         var refreshToken = _tokenService.GenerateRefreshToken();
+        var refreshTokenHash = _tokenService.HashToken(refreshToken);
 
         var refreshTokenEntity = new RefreshToken
         {
-            Token = refreshToken,
+            TokenHash = refreshTokenHash,
             ExpiresAt = DateTime.UtcNow.AddDays(7),
             StudentId = user.Id
         };
@@ -116,19 +129,37 @@ public class AuthService : IAuthService
 
     public async Task<ApiResponse<UserToken>> RefreshToken(string refreshToken)
     {
+        var tokenHash = _tokenService.HashToken(refreshToken);
+
         var token = await _context.RefreshTokens
             .Include(x => x.Student)
-            .FirstOrDefaultAsync(x => x.Token == refreshToken);
+            .FirstOrDefaultAsync(x => x.TokenHash == tokenHash);
 
         if (token == null || token.IsRevoked || token.ExpiresAt <= DateTime.UtcNow)
             return ApiResponseFactory.CreateErrorResponse<UserToken>("Invalid refresh token");
 
+        token.IsRevoked = true;
+
+        var newRefreshToken = _tokenService.GenerateRefreshToken();
+        var newRefreshTokenHash = _tokenService.HashToken(newRefreshToken);
+
+        var newTokenEntity = new RefreshToken
+        {
+            TokenHash = newRefreshTokenHash,
+            StudentId = token.StudentId,
+            ExpiresAt = DateTime.UtcNow.AddDays(7)
+        };
+
+        _context.RefreshTokens.Add(newTokenEntity);
+
         var newAccessToken = _tokenService.GenerateAccessToken(token.Student);
+
+        await _context.SaveChangesAsync();
 
         return ApiResponseFactory.CreateSuccessResponse(new UserToken
         {
             Token = newAccessToken,
-            RefreshToken = refreshToken,
+            RefreshToken = newRefreshToken,
             ExpiresAt = DateTime.UtcNow.AddMinutes(15)
         });
     }

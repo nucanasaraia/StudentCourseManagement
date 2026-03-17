@@ -6,5 +6,6 @@ namespace StudentCourseManagement.Services.Interfaces
     {
         string GenerateAccessToken(Student user);
         string GenerateRefreshToken();
+        string HashToken(string token); 
     }
 }

@@ -14,26 +14,39 @@ public class AuthController : ControllerBase
         _authService = authService;
     }
 
-        [HttpPost("register")]
-        public async Task<IActionResult> Register(RegisterDto dto)
-            => Ok(await _authService.Register(dto));
+    [HttpPost("register")]
+    public async Task<IActionResult> Register(RegisterDto dto)
+    {
+        var result = await _authService.Register(dto);
 
-        [HttpPost("verify-email")]
+        if (result.Status == HttpStatusCode.Conflict)
+            return Conflict(result);
+
+        if (result.Status != HttpStatusCode.OK)
+            return BadRequest(result);
+
+        return StatusCode(201, result);
+    }
+
+    [HttpPost("verify-email")]
         public async Task<IActionResult> VerifyEmail(VerifyEmailDto dto)
             => Ok(await _authService.VerifyEmail(dto));
 
-        [HttpPost("login")]
-        public async Task<IActionResult> Login(LoginDto dto)
-        {
-            var result = await _authService.Login(dto);
+    [HttpPost("login")]
+    public async Task<IActionResult> Login(LoginDto dto)
+    {
+        var result = await _authService.Login(dto);
 
-            if (result.Status != HttpStatusCode.OK)
+        if (result.Status == HttpStatusCode.Unauthorized)
+            return Unauthorized(result);
+
+        if (result.Status != HttpStatusCode.OK)
             return BadRequest(result);
 
-            return Ok(result);
-        }
+        return Ok(result);
+    }
 
-        [HttpPost("refresh-token")]
+    [HttpPost("refresh-token")]
         public async Task<IActionResult> Refresh(RefreshTokenDto dto)
             => Ok(await _authService.RefreshToken(dto.RefreshToken));
 

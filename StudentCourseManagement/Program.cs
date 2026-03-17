@@ -13,7 +13,7 @@ builder.Services.ConfigureMapping();
 builder.Services.ConfigureJwt(builder.Configuration);
 builder.Services.AddAuthorization();
 builder.Services.Configure<SmtpSettings>(
-    builder.Configuration.GetSection("SmtpSettings"));
+    builder.Configuration.GetSection("SMTP"));
 
 var app = builder.Build();
 

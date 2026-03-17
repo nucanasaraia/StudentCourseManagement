@@ -25,7 +25,8 @@ namespace StudentCourseManagement.Middleware
 
                 var response = new
                 {
-                    message = ex.Message
+                    message = ex.Message,
+                    detail = ex.InnerException?.Message
                 };
 
                 await context.Response.WriteAsync(JsonSerializer.Serialize(response));
