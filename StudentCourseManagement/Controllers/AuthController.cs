@@ -19,43 +19,41 @@ public class AuthController : ControllerBase
     {
         var result = await _authService.Register(dto);
 
-        if (result.Status == HttpStatusCode.Conflict)
-            return Conflict(result);
-
-        if (result.Status != HttpStatusCode.OK)
-            return BadRequest(result);
-
-        return StatusCode(201, result);
+        return StatusCode((int)result.Status, result);
     }
 
     [HttpPost("verify-email")]
-        public async Task<IActionResult> VerifyEmail(VerifyEmailDto dto)
-            => Ok(await _authService.VerifyEmail(dto));
+    public async Task<IActionResult> VerifyEmail(VerifyEmailDto dto)
+    {
+        var result = await _authService.VerifyEmail(dto);
+        return StatusCode((int)result.Status, result);
+    }
 
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginDto dto)
     {
         var result = await _authService.Login(dto);
-
-        if (result.Status == HttpStatusCode.Unauthorized)
-            return Unauthorized(result);
-
-        if (result.Status != HttpStatusCode.OK)
-            return BadRequest(result);
-
-        return Ok(result);
+        return StatusCode((int)result.Status, result);
     }
 
     [HttpPost("refresh-token")]
-        public async Task<IActionResult> Refresh(RefreshTokenDto dto)
-            => Ok(await _authService.RefreshToken(dto.RefreshToken));
+    public async Task<IActionResult> Refresh(RefreshTokenDto dto)
+    {
+        var result = await _authService.RefreshToken(dto.RefreshToken);
+        return StatusCode((int)result.Status, result);
+    }
 
-        [HttpPost("forgot-password")]
-        public async Task<IActionResult> ForgotPassword(ForgotPasswordDto dto)
-            => Ok(await _authService.ForgotPassword(dto.Email));
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword(ForgotPasswordDto dto)
+    {
+        var result = await _authService.ForgotPassword(dto.Email);
+        return StatusCode((int)result.Status, result);
+    }
 
-        [HttpPost("reset-password")]
-        public async Task<IActionResult> ResetPassword(ResetPasswordDto dto)
-            => Ok(await _authService.ResetPassword(dto));
-
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword(ResetPasswordDto dto)
+    {
+        var result = await _authService.ResetPassword(dto);
+        return StatusCode((int)result.Status, result);
+    }
 }
