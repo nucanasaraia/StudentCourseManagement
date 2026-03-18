@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using StudentCourseManagement.Requests;
 using StudentCourseManagement.Services.Interfaces;
@@ -11,48 +10,49 @@ namespace StudentCourseManagement.Controllers
     public class StudentController : ControllerBase
     {
         private readonly IStudentService _studentService;
+
         public StudentController(IStudentService studentService)
         {
             _studentService = studentService;
         }
 
-        [HttpGet()]
-        public async Task<ActionResult> GetAllStudent()
+        [HttpGet]
+        public async Task<IActionResult> GetAllStudents()
         {
-            var students = await _studentService.GetStudents();
-            return Ok(students);        
+            var result = await _studentService.GetStudents();
+            return StatusCode((int)result.Status, result);
         }
 
         [HttpGet("{id}")]
         [Authorize]
-        public async Task<ActionResult> GetStudentById(int id)
+        public async Task<IActionResult> GetStudentById(int id)
         {
-            var student = await _studentService.GetStudentById(id);
-            return Ok(student);
+            var result = await _studentService.GetStudentById(id);
+            return StatusCode((int)result.Status, result);
         }
 
-        [HttpPost()]
+        [HttpPost]
         [Authorize]
-        public async Task<ActionResult> CreateStudent(AddStudent request)
+        public async Task<IActionResult> CreateStudent(AddStudent request)
         {
-            var student = await _studentService.CreateStudent(request);
-            return Ok(student);
+            var result = await _studentService.CreateStudent(request);
+            return StatusCode((int)result.Status, result);
         }
 
         [HttpPut("{id}")]
         [Authorize]
-        public async Task<ActionResult> UpdateStudent(int id, AddStudent request)
+        public async Task<IActionResult> UpdateStudent(int id, AddStudent request)
         {
-            var student = await _studentService.UpdateStudent(id, request);
-            return Ok(student);
+            var result = await _studentService.UpdateStudent(id, request);
+            return StatusCode((int)result.Status, result);
         }
 
         [HttpDelete("{id}")]
         [Authorize]
-        public async Task<ActionResult> DeleteStudent(int id)
+        public async Task<IActionResult> DeleteStudent(int id)
         {
-            var student = await _studentService.DeleteStudent(id);
-            return Ok(student);
+            var result = await _studentService.DeleteStudent(id);
+            return StatusCode((int)result.Status, result);
         }
     }
 }
