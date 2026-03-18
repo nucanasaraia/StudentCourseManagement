@@ -6,6 +6,7 @@ using StudentCourseManagement.DTOs;
 using StudentCourseManagement.Models;
 using StudentCourseManagement.Requests;
 using StudentCourseManagement.Services.Interfaces;
+using System.Net;
 
 namespace StudentCourseManagement.Services.Implementations
 {
@@ -13,6 +14,7 @@ namespace StudentCourseManagement.Services.Implementations
     {
         private readonly DataContext _context;
         private readonly IMapper _mapper;
+
         public EnrollmentService(DataContext context, IMapper mapper)
         {
             _context = context;
@@ -21,44 +23,29 @@ namespace StudentCourseManagement.Services.Implementations
 
         public async Task<ApiResponse<EnrollmentDto>> CreateEnrollment(AddEnrollment request)
         {
-            try
-            {
-                var response = _mapper.Map<Enrollment>(request);
-                _context.Enrollments.Add(response);
-                await _context.SaveChangesAsync();
+            var enrollment = _mapper.Map<Enrollment>(request);
 
-                var data = _mapper.Map<EnrollmentDto>(response);
-                return ApiResponseFactory.CreateSuccessResponse(data);
-            }
-            catch (Exception ex)
-            {
-                return ApiResponseFactory.CreateErrorResponse<EnrollmentDto>(ex.Message);
-            }
+            _context.Enrollments.Add(enrollment);
+            await _context.SaveChangesAsync();
+
+            var data = _mapper.Map<EnrollmentDto>(enrollment);
+            return ApiResponseFactory.Success(data, "Enrollment created successfully", HttpStatusCode.Created);
         }
 
-        public async Task<ApiResponse<List<CourseDto>>> GetCoursesByStudentId(int id)
+        public async Task<ApiResponse<List<CourseDto>>> GetCoursesByStudentId(int studentId)
         {
-            try
-            {
-                var student = await _context.Students.FirstOrDefaultAsync(s => s.Id == id);
-                if (student == null)
-                {
-                    return ApiResponseFactory.CreateErrorResponse<List<CourseDto>>("Student not found");
-                }
+            var studentExists = await _context.Students.AnyAsync(s => s.Id == studentId);
+            if (!studentExists)
+                return ApiResponseFactory.NotFound<List<CourseDto>>($"Student with Id {studentId} does not exist");
 
-                var courses = await _context.Enrollments
-                    .Where(e => e.StudentId == id)
-                    .Include(e => e.Course)
-                    .Select(e => e.Course)
-                    .ToListAsync();
+            var courses = await _context.Enrollments
+                .Where(e => e.StudentId == studentId)
+                .Include(e => e.Course)
+                .Select(e => e.Course)
+                .ToListAsync();
 
-                var data = _mapper.Map<List<CourseDto>>(courses);
-                return ApiResponseFactory.CreateSuccessResponse(data);
-            }
-            catch (Exception ex)
-            {
-                return ApiResponseFactory.CreateErrorResponse<List<CourseDto>>(ex.Message);
-            }
+            var data = _mapper.Map<List<CourseDto>>(courses);
+            return ApiResponseFactory.Success(data, "Courses retrieved successfully");
         }
     }
 }

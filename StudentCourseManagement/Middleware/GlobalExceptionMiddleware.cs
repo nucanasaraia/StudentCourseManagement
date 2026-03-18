@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Text.Json;
+using StudentCourseManagement.CORE;
 
 namespace StudentCourseManagement.Middleware
 {
@@ -18,18 +19,18 @@ namespace StudentCourseManagement.Middleware
             {
                 await _next(context);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
                 context.Response.ContentType = "application/json";
 
-                var response = new
-                {
-                    message = ex.Message,
-                    detail = ex.InnerException?.Message
-                };
+                var response = ApiResponseFactory.ServerError<string>(
+                    "An unexpected error occurred"
+                );
 
-                await context.Response.WriteAsync(JsonSerializer.Serialize(response));
+                var json = JsonSerializer.Serialize(response);
+
+                await context.Response.WriteAsync(json);
             }
         }
     }

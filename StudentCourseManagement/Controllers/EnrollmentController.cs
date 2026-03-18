@@ -19,7 +19,7 @@ namespace StudentCourseManagement.Controllers
 
         [HttpPost()]
 
-        public async Task<ActionResult> AddEnrollement(AddEnrollment request)
+        public async Task<ActionResult> AddEnrollment(AddEnrollment request)
         {
             var enrollment = await _enrollmentService.CreateEnrollment(request);
             return Ok(enrollment);

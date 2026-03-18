@@ -6,7 +6,7 @@ using StudentCourseManagement.DTOs;
 using StudentCourseManagement.Models;
 using StudentCourseManagement.Requests;
 using StudentCourseManagement.Services.Interfaces;
-using System.Runtime.InteropServices;
+using System.Net;
 
 namespace StudentCourseManagement.Services.Implementations
 {
@@ -23,102 +23,67 @@ namespace StudentCourseManagement.Services.Implementations
 
         public async Task<ApiResponse<StudentDto>> CreateStudent(AddStudent request)
         {
-            try
-            {
-                var student = _mapper.Map<Student>(request);
-                _context.Students.Add(student);
-                await _context.SaveChangesAsync();
+            var student = _mapper.Map<Student>(request);
 
-                var data = _mapper.Map<StudentDto>(student);
-                return ApiResponseFactory.CreateSuccessResponse(data);
-            }
-            catch(Exception ex)
-            {
-                return ApiResponseFactory.CreateErrorResponse<StudentDto>($"An Error occurred: {ex.Message}");
-            }
-                
+            _context.Students.Add(student);
+            await _context.SaveChangesAsync();
+
+            var data = _mapper.Map<StudentDto>(student);
+
+            return ApiResponseFactory.Success(
+                data,
+                "Student created successfully",
+                HttpStatusCode.Created
+            );
         }
 
         public async Task<ApiResponse<bool>> DeleteStudent(int id)
         {
-            try
-            {
-                var student = await _context.Students.FirstOrDefaultAsync(s => s.Id == id);
-                if (student == null)
-                {
-                    return ApiResponseFactory.CreateNotFoundResponse<bool>($"Student with Id {id} does not exist");
-                }
+            var student = await _context.Students.FirstOrDefaultAsync(s => s.Id == id);
 
-                _context.Students.Remove(student);
-                await _context.SaveChangesAsync();
+            if (student == null)
+                return ApiResponseFactory.NotFound<bool>($"Student with Id {id} does not exist");
 
-                return ApiResponseFactory.CreateSuccessResponse(true, $"Student with Id {id} has been deleted successfully");
-            }
-            catch(Exception ex)
-            {
-                return ApiResponseFactory.CreateErrorResponse<bool>($"An Error occurred: {ex.Message}");
-            }
+            _context.Students.Remove(student);
+            await _context.SaveChangesAsync();
+
+            return ApiResponseFactory.Success(true, $"Student with Id {id} deleted successfully");
         }
 
         public async Task<ApiResponse<StudentDto>> GetStudentById(int id)
         {
-            try
-            {
-                var student = await _context.Students.FindAsync(id);
-                if (student == null)
-                {
-                    return ApiResponseFactory.CreateNotFoundResponse<StudentDto>($"Student with Id {id} does not exist");
-                }
+            var student = await _context.Students.FindAsync(id);
 
-                var data = _mapper.Map<StudentDto>(student);
-                return ApiResponseFactory.CreateSuccessResponse(data);
-            }
-            catch(Exception ex)
-            {
-                return ApiResponseFactory.CreateErrorResponse<StudentDto>($"An Error occurred: {ex.Message}");
-            }
+            if (student == null)
+                return ApiResponseFactory.NotFound<StudentDto>($"Student with Id {id} does not exist");
+
+            var data = _mapper.Map<StudentDto>(student);
+
+            return ApiResponseFactory.Success(data);
         }
 
         public async Task<ApiResponse<List<StudentDto>>> GetStudents()
         {
-            try
-            {
-                var students = await _context.Students.ToListAsync();
-                if (!students.Any())
-                {
-                    return ApiResponseFactory.CreateNotFoundResponse<List<StudentDto>>("No students found");
-                }
+            var students = await _context.Students.ToListAsync();
 
-                var data = _mapper.Map<List<StudentDto>>(students);
-                return ApiResponseFactory.CreateSuccessResponse(data);
-            }
-            catch(Exception ex)
-            {
-                return ApiResponseFactory.CreateErrorResponse<List<StudentDto>>($"An Error occurred: {ex.Message}");
-            }
+            var data = _mapper.Map<List<StudentDto>>(students);
+
+            return ApiResponseFactory.Success(data);
         }
 
         public async Task<ApiResponse<StudentDto>> UpdateStudent(int id, AddStudent request)
         {
-            try
-            {
-                var student = await _context.Students.FirstOrDefaultAsync(s => s.Id == id);
-                if (student == null)
-                {
-                    return ApiResponseFactory.CreateNotFoundResponse<StudentDto>($"Student with Id {id} does not exist");
-                }
+            var student = await _context.Students.FirstOrDefaultAsync(s => s.Id == id);
 
-                _mapper.Map(request, student);
-                await _context.SaveChangesAsync();
+            if (student == null)
+                return ApiResponseFactory.NotFound<StudentDto>($"Student with Id {id} does not exist");
 
-                var data = _mapper.Map<StudentDto>(student);
-                return ApiResponseFactory.CreateSuccessResponse(data, $"Student with Id {id} has been updated successfully");
-            }
+            _mapper.Map(request, student);
+            await _context.SaveChangesAsync();
 
-            catch(Exception ex)
-            {
-                return ApiResponseFactory.CreateErrorResponse<StudentDto>($"An Error occurred: {ex.Message}");
-            }
+            var data = _mapper.Map<StudentDto>(student);
+
+            return ApiResponseFactory.Success(data, $"Student with Id {id} updated successfully");
         }
     }
 }

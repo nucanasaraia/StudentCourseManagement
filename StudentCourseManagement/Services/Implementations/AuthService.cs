@@ -175,6 +175,9 @@ public class AuthService : IAuthService
 
     private static string GenerateSecureToken() => Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
     private static string GenerateVerificationCode() => RandomNumberGenerator.GetInt32(100000, 999999).ToString();
-    private static ApiResponse<T> Success<T>(T data) => ApiResponseFactory.CreateSuccessResponse(data);
-    private static ApiResponse<T> Error<T>(string message) => ApiResponseFactory.CreateErrorResponse<T>(message);
+    private static ApiResponse<T> Success<T>(T data)
+    => ApiResponseFactory.Success(data);  
+
+    private static ApiResponse<T> Error<T>(string message)
+        => ApiResponseFactory.Fail<T>(message, HttpStatusCode.InternalServerError);
 }
