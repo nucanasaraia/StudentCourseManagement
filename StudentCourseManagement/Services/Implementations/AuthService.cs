@@ -15,10 +15,7 @@ public class AuthService : IAuthService
     private readonly IEmailService _emailService;
     private readonly PasswordHasher<Student> _passwordHasher;
 
-    public AuthService(
-        DataContext context,
-        ITokenService tokenService,
-        IEmailService emailService)
+    public AuthService(DataContext context, ITokenService tokenService, IEmailService emailService)
     {
         _context = context;
         _tokenService = tokenService;
@@ -26,55 +23,53 @@ public class AuthService : IAuthService
         _passwordHasher = new PasswordHasher<Student>();
     }
 
+    // REGISTER
     public async Task<ApiResponse<string>> Register(RegisterDto dto)
     {
         var email = dto.Email.Trim().ToLower();
-
         if (await _context.Students.AnyAsync(x => x.Email == email))
-            return ApiResponseFactory.CreateErrorResponse<string>("Email already exists");
+            return Error<string>("Email already exists");
 
         var user = new Student
         {
             Username = dto.Username,
-            Email = email
+            Email = email,
+            PasswordHash = _passwordHasher.HashPassword(null, dto.Password),
+            VerificationCode = GenerateVerificationCode(),
+            VerificationCodeExpires = DateTime.UtcNow.AddMinutes(10)
         };
-
-        user.PasswordHash = _passwordHasher.HashPassword(user, dto.Password);
-
-        var emailResult = await _emailService.SendVerificationCodeAsync(user.Email, user.Username);
-
-        if (emailResult.Status != HttpStatusCode.OK)
-            return ApiResponseFactory.CreateErrorResponse<string>("Failed to send verification email");
-
-        user.VerificationCode = emailResult.Data;
-        user.VerificationCodeExpires = DateTime.UtcNow.AddMinutes(10);
 
         _context.Students.Add(user);
         await _context.SaveChangesAsync();
 
-        return ApiResponseFactory.CreateSuccessResponse("Registration successful. Verify email.");
+        var emailResult = await _emailService.SendVerificationCodeAsync(user.Email, user.Username, user.VerificationCode);
+        if (emailResult.Status != HttpStatusCode.OK)
+            return Error<string>("Failed to send verification email");
+
+        return Success("Registration successful. Verify email.");
     }
 
+    // VERIFY EMAIL
     public async Task<ApiResponse<string>> VerifyEmail(VerifyEmailDto dto)
     {
-        var user = await _context.Students.FirstOrDefaultAsync(x => x.Email == dto.Email);
+        var email = dto.Email.Trim().ToLower();
+        var user = await _context.Students.FirstOrDefaultAsync(x => x.Email == email);
 
         if (user == null)
-            return ApiResponseFactory.CreateErrorResponse<string>("User not found");
+            return Error<string>("Invalid request");
 
         if (user.VerificationAttempts >= 5)
-            return ApiResponseFactory.CreateErrorResponse<string>("Too many attempts");
+            return Error<string>("Too many attempts");
+
+        if (user.VerificationCodeExpires < DateTime.UtcNow)
+            return Error<string>("Code expired");
 
         if (user.VerificationCode != dto.Code)
         {
             user.VerificationAttempts++;
             await _context.SaveChangesAsync();
-
-            return ApiResponseFactory.CreateErrorResponse<string>("Invalid code");
+            return Error<string>("Invalid code");
         }
-
-        if (user.VerificationCodeExpires < DateTime.UtcNow)
-            return ApiResponseFactory.CreateErrorResponse<string>("Code expired");
 
         user.EmailVerified = true;
         user.VerificationCode = null;
@@ -82,127 +77,104 @@ public class AuthService : IAuthService
         user.VerificationCodeExpires = null;
 
         await _context.SaveChangesAsync();
-
-        return ApiResponseFactory.CreateSuccessResponse("Email verified successfully");
+        return Success("Email verified successfully");
     }
 
+    // LOGIN
     public async Task<ApiResponse<UserToken>> Login(LoginDto dto)
     {
         var username = dto.Username.Trim().ToLower();
+        var user = await _context.Students.FirstOrDefaultAsync(x => x.Username.ToLower() == username);
 
-        var user = await _context.Students
-            .FirstOrDefaultAsync(x => x.Username.ToLower() == username);
-
-        if (user == null)
-            return ApiResponseFactory.CreateErrorResponse<UserToken>("User not found");
-
-        if (!user.EmailVerified)
-            return ApiResponseFactory.CreateErrorResponse<UserToken>("Email not verified");
+        if (user == null || !user.EmailVerified)
+            return Error<UserToken>("Invalid credentials");
 
         var result = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, dto.Password);
-
         if (result != PasswordVerificationResult.Success)
-            return ApiResponseFactory.CreateErrorResponse<UserToken>("Invalid password");
+            return Error<UserToken>("Invalid credentials");
 
-        var accessToken = _tokenService.GenerateAccessToken(user);
-
-        var refreshToken = _tokenService.GenerateRefreshToken();
-        var refreshTokenHash = _tokenService.HashToken(refreshToken);
-
-        var refreshTokenEntity = new RefreshToken
-        {
-            TokenHash = refreshTokenHash,
-            ExpiresAt = DateTime.UtcNow.AddDays(7),
-            StudentId = user.Id
-        };
-
-        _context.RefreshTokens.Add(refreshTokenEntity);
+        var tokens = await GenerateTokens(user);
         await _context.SaveChangesAsync();
-
-        return ApiResponseFactory.CreateSuccessResponse(new UserToken
-        {
-            Token = accessToken,
-            RefreshToken = refreshToken,
-            ExpiresAt = DateTime.UtcNow.AddMinutes(15)
-        });
+        return Success(tokens);
     }
 
+    // REFRESH TOKEN
     public async Task<ApiResponse<UserToken>> RefreshToken(string refreshToken)
     {
-        var tokenHash = _tokenService.HashToken(refreshToken);
+        var hash = _tokenService.HashToken(refreshToken);
+        var token = await _context.RefreshTokens.Include(x => x.Student)
+            .FirstOrDefaultAsync(x => x.TokenHash == hash && !x.IsRevoked && x.ExpiresAt > DateTime.UtcNow);
 
-        var token = await _context.RefreshTokens
-            .Include(x => x.Student)
-            .FirstOrDefaultAsync(x => x.TokenHash == tokenHash);
-
-        if (token == null || token.IsRevoked || token.ExpiresAt <= DateTime.UtcNow)
-            return ApiResponseFactory.CreateErrorResponse<UserToken>("Invalid refresh token");
+        if (token == null)
+            return Error<UserToken>("Invalid refresh token");
 
         token.IsRevoked = true;
-
-        var newRefreshToken = _tokenService.GenerateRefreshToken();
-        var newRefreshTokenHash = _tokenService.HashToken(newRefreshToken);
-
-        var newTokenEntity = new RefreshToken
-        {
-            TokenHash = newRefreshTokenHash,
-            StudentId = token.StudentId,
-            ExpiresAt = DateTime.UtcNow.AddDays(7)
-        };
-
-        _context.RefreshTokens.Add(newTokenEntity);
-
-        var newAccessToken = _tokenService.GenerateAccessToken(token.Student);
-
+        var tokens = await GenerateTokens(token.Student);
         await _context.SaveChangesAsync();
-
-        return ApiResponseFactory.CreateSuccessResponse(new UserToken
-        {
-            Token = newAccessToken,
-            RefreshToken = newRefreshToken,
-            ExpiresAt = DateTime.UtcNow.AddMinutes(15)
-        });
+        return Success(tokens);
     }
 
+    // PASSWORD RESET
     public async Task<ApiResponse<string>> ForgotPassword(string email)
     {
+        email = email.Trim().ToLower();
         var user = await _context.Students.FirstOrDefaultAsync(x => x.Email == email);
-
         if (user == null)
-            return ApiResponseFactory.CreateErrorResponse<string>("User not found");
+            return Success("If this email exists, a reset link was sent");
 
-        var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
-
-        user.PasswordResetToken = token;
+        var rawToken = GenerateSecureToken();
+        user.PasswordResetTokenHash = _tokenService.HashToken(rawToken);
         user.PasswordResetTokenExpires = DateTime.UtcNow.AddHours(1);
 
-        var resetLink = $"https://yourfrontend.com/reset-password?token={token}";
-
+        var resetLink = $"https://yourfrontend.com/reset-password?token={rawToken}";
         await _emailService.SendPasswordResetLinkAsync(user.Email, user.Username, resetLink);
-
         await _context.SaveChangesAsync();
 
-        return ApiResponseFactory.CreateSuccessResponse("Reset link sent");
+        return Success("If this email exists, a reset link was sent");
     }
 
     public async Task<ApiResponse<string>> ResetPassword(ResetPasswordDto dto)
     {
-        var user = await _context.Students
-            .FirstOrDefaultAsync(x => x.PasswordResetToken == dto.Token);
+        var hash = _tokenService.HashToken(dto.Token);
+        var user = await _context.Students.FirstOrDefaultAsync(x =>
+            x.PasswordResetTokenHash == hash &&
+            x.PasswordResetTokenExpires > DateTime.UtcNow);
 
         if (user == null)
-            return ApiResponseFactory.CreateErrorResponse<string>("Invalid token");
-
-        if (user.PasswordResetTokenExpires < DateTime.UtcNow)
-            return ApiResponseFactory.CreateErrorResponse<string>("Token expired");
+            return Error<string>("Invalid or expired token");
 
         user.PasswordHash = _passwordHasher.HashPassword(user, dto.NewPassword);
-
-        user.PasswordResetToken = null;
+        user.PasswordResetTokenHash = null;
         user.PasswordResetTokenExpires = null;
 
         await _context.SaveChangesAsync();
-
-        return ApiResponseFactory.CreateSuccessResponse("Password reset successful");
+        return Success("Password reset successful");
     }
+ 
+    // HELPERS
+    private async Task<UserToken> GenerateTokens(Student user)
+    {
+        var accessToken = _tokenService.GenerateAccessToken(user);
+        var refreshToken = _tokenService.GenerateRefreshToken();
+        var hash = _tokenService.HashToken(refreshToken);
+
+        _context.RefreshTokens.Add(new RefreshToken
+        {
+            TokenHash = hash,
+            StudentId = user.Id,
+            ExpiresAt = DateTime.UtcNow.AddDays(7)
+        });
+
+        return new UserToken
+        {
+            Token = accessToken,
+            RefreshToken = refreshToken,
+            ExpiresAt = DateTime.UtcNow.AddMinutes(15)
+        };
+    }
+
+    private static string GenerateSecureToken() => Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
+    private static string GenerateVerificationCode() => RandomNumberGenerator.GetInt32(100000, 999999).ToString();
+    private static ApiResponse<T> Success<T>(T data) => ApiResponseFactory.CreateSuccessResponse(data);
+    private static ApiResponse<T> Error<T>(string message) => ApiResponseFactory.CreateErrorResponse<T>(message);
 }

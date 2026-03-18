@@ -23,40 +23,33 @@ namespace StudentCourseManagement.Services.Implementations
             {
                 var subject = "Reset Your Password";
                 var body = GeneratePasswordResetEmailTemplate(userName, resetLink);
-
                 await SendEmailAsync(toEmail, subject, body);
-
                 return ApiResponseFactory.CreateSuccessResponse("Password reset email sent.");
             }
-            catch (Exception ex)
+            catch
             {
                 return ApiResponseFactory.CreateErrorResponse<string>("Email sending failed");
             }
         }
 
-        public async Task<ApiResponse<string>> SendVerificationCodeAsync(string toEmail, string userName)
+        public async Task<ApiResponse<bool>> SendVerificationCodeAsync(string toEmail, string userName, string code)
         {
             try
             {
-                string verificationCode = GenerateVerificationCode();
-
                 var subject = "Your Verification Code";
-                var body = GenerateVerificationEmailTemplate(userName, verificationCode);
-
+                var body = GenerateVerificationEmailTemplate(userName, code);
                 await SendEmailAsync(toEmail, subject, body);
-
-                return ApiResponseFactory.CreateSuccessResponse(verificationCode);
+                return ApiResponseFactory.CreateSuccessResponse(true);
             }
-            catch (Exception ex)
+            catch
             {
-                return ApiResponseFactory.CreateErrorResponse<string>("Email sending failed");
+                return ApiResponseFactory.CreateErrorResponse<bool>("Email sending failed");
             }
         }
 
         private async Task SendEmailAsync(string toEmail, string subject, string htmlBody)
         {
             using var mail = new MailMessage();
-
             mail.From = new MailAddress(_smtp.SenderEmail, _smtp.SenderName);
             mail.To.Add(toEmail);
             mail.Subject = subject;
@@ -71,18 +64,6 @@ namespace StudentCourseManagement.Services.Implementations
             };
 
             await smtpClient.SendMailAsync(mail);
-        }
-
-        private static string GenerateVerificationCode()
-        {
-            using var rng = RandomNumberGenerator.Create();
-            var bytes = new byte[4];
-
-            rng.GetBytes(bytes);
-
-            var randomNumber = BitConverter.ToUInt32(bytes, 0);
-
-            return (randomNumber % 900000 + 100000).ToString();
         }
 
         private static string GeneratePasswordResetEmailTemplate(string userName, string resetLink)
