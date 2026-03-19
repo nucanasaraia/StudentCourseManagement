@@ -1,5 +1,5 @@
 ﻿using FluentValidation;
-using StudentCourseManagement.Validations;
+using FluentValidation.AspNetCore;
 
 namespace StudentCourseManagement.Extensions
 {
@@ -7,7 +7,8 @@ namespace StudentCourseManagement.Extensions
     {
         public static void ConfigureValidation(this IServiceCollection services)
         {
-            services.AddValidatorsFromAssemblyContaining<AddStudentValidator>();
+            services.AddFluentValidationAutoValidation();
+            services.AddValidatorsFromAssemblyContaining<RegisterValidator>();
         }
     }
 }
