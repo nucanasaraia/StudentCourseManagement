@@ -22,7 +22,12 @@ namespace StudentCourseManagement.Controllers
         [HttpPost("enroll/{courseId}")]
         public async Task<IActionResult> Enroll(int courseId)
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+            var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (!int.TryParse(claim, out var userId))
+            {
+                return Unauthorized("Invalid user ID.");
+            }
 
             var result = await _enrollmentService.CreateEnrollment(userId, courseId);
 
@@ -33,7 +38,12 @@ namespace StudentCourseManagement.Controllers
         [HttpGet("my-courses")]
         public async Task<IActionResult> GetMyCourses()
         {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+            var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (!int.TryParse(claim, out var userId))
+            {
+                return Unauthorized("Invalid user ID.");
+            }
 
             var result = await _enrollmentService.GetCoursesByUserId(userId);
 
