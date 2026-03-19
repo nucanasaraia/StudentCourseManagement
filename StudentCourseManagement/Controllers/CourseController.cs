@@ -23,24 +23,24 @@ namespace StudentCourseManagement.Controllers
             return StatusCode((int)result.Status, result);
         }
 
+        [Authorize(Roles = "ADMIN,TEACHER")]
         [HttpPost]
-        [Authorize]
         public async Task<IActionResult> AddCourse(AddCourse request)
         {
             var result = await _courseService.CreateCourse(request);
             return StatusCode((int)result.Status, result);
         }
 
+        [Authorize(Roles = "ADMIN,TEACHER")]
         [HttpDelete("{id}")]
-        [Authorize]
         public async Task<IActionResult> DeleteCourse(int id)
         {
             var result = await _courseService.DeleteCourse(id);
             return StatusCode((int)result.Status, result);
         }
 
+        [Authorize(Roles = "ADMIN,TEACHER")]
         [HttpPut("{id}")]
-        [Authorize]
         public async Task<IActionResult> UpdateCourse(int id, AddCourse request)
         {
             var result = await _courseService.UpdateCourse(id, request);

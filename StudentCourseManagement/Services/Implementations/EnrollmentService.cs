@@ -21,9 +21,23 @@ namespace StudentCourseManagement.Services.Implementations
             _mapper = mapper;
         }
 
-        public async Task<ApiResponse<EnrollmentDto>> CreateEnrollment(AddEnrollment request)
+        public async Task<ApiResponse<EnrollmentDto>> CreateEnrollment(int userId, int courseId)
         {
-            var enrollment = _mapper.Map<Enrollment>(request);
+            var exists = await _context.Enrollments
+                .AnyAsync(e => e.UserId == userId && e.CourseId == courseId);
+
+            if (exists)
+                return ApiResponseFactory.Fail<EnrollmentDto>("Already enrolled", HttpStatusCode.BadRequest);
+
+            var courseExists = await _context.Courses.AnyAsync(c => c.Id == courseId);
+            if (!courseExists)
+                return ApiResponseFactory.NotFound<EnrollmentDto>("Course not found");
+
+            var enrollment = new Enrollment
+            {
+                UserId = userId,
+                CourseId = courseId
+            };
 
             _context.Enrollments.Add(enrollment);
             await _context.SaveChangesAsync();
@@ -32,14 +46,14 @@ namespace StudentCourseManagement.Services.Implementations
             return ApiResponseFactory.Success(data, "Enrollment created successfully", HttpStatusCode.Created);
         }
 
-        public async Task<ApiResponse<List<CourseDto>>> GetCoursesByStudentId(int studentId)
+        public async Task<ApiResponse<List<CourseDto>>> GetCoursesByUserId(int userId)
         {
-            var studentExists = await _context.Students.AnyAsync(s => s.Id == studentId);
-            if (!studentExists)
-                return ApiResponseFactory.NotFound<List<CourseDto>>($"Student with Id {studentId} does not exist");
+            var exists = await _context.Users.AnyAsync(s => s.Id == userId);
+            if (!exists)
+                return ApiResponseFactory.NotFound<List<CourseDto>>($"Student with Id {userId} does not exist");
 
             var courses = await _context.Enrollments
-                .Where(e => e.StudentId == studentId)
+                .Where(e => e.UserId == userId)
                 .Include(e => e.Course)
                 .Select(e => e.Course)
                 .ToListAsync();

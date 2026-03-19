@@ -7,7 +7,7 @@ namespace StudentCourseManagement.Extensions
     {
         public static void ConfigureServices(this IServiceCollection services)
         {
-            services.AddScoped<IStudentService, StudentService>();
+            services.AddScoped<IUserService, UserService>();
             services.AddScoped<ICourseService, CourseService>();
             services.AddScoped<IEnrollmentService, EnrollmentService>();
             services.AddScoped<IAuthService, AuthService>();

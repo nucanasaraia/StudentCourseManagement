@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using StudentCourseManagement.Requests;
 using StudentCourseManagement.Services.Interfaces;
+using System.Security.Claims;
 
 namespace StudentCourseManagement.Controllers
 {
@@ -17,17 +18,25 @@ namespace StudentCourseManagement.Controllers
             _enrollmentService = enrollmentService;
         }
 
-        [HttpPost]
-        public async Task<IActionResult> AddEnrollment(AddEnrollment request)
+        [Authorize(Roles = "STUDENT")]
+        [HttpPost("enroll/{courseId}")]
+        public async Task<IActionResult> Enroll(int courseId)
         {
-            var result = await _enrollmentService.CreateEnrollment(request);
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+
+            var result = await _enrollmentService.CreateEnrollment(userId, courseId);
+
             return StatusCode((int)result.Status, result);
         }
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetCoursesByStudentId(int id)
+        [Authorize(Roles = "STUDENT")]
+        [HttpGet("my-courses")]
+        public async Task<IActionResult> GetMyCourses()
         {
-            var result = await _enrollmentService.GetCoursesByStudentId(id);
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+
+            var result = await _enrollmentService.GetCoursesByUserId(userId);
+
             return StatusCode((int)result.Status, result);
         }
     }

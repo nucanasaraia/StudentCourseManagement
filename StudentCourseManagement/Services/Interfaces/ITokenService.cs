@@ -4,7 +4,7 @@ namespace StudentCourseManagement.Services.Interfaces
 {
     public interface ITokenService
     {
-        string GenerateAccessToken(Student user);
+        string GenerateAccessToken(User user);
         string GenerateRefreshToken();
         string HashToken(string token); 
     }

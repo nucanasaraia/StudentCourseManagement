@@ -2,6 +2,7 @@
 using Microsoft.IdentityModel.Tokens;
 using System.Reflection.PortableExecutable;
 using System.Runtime.Intrinsics.X86;
+using System.Security.Claims;
 using System.Text;
 
 public static class JwtExtensions
@@ -28,7 +29,9 @@ public static class JwtExtensions
                 ValidateIssuerSigningKey = true,
                 ValidIssuer = configuration["Jwt:Issuer"],
                 ValidAudience = configuration["Jwt:Audience"],
-                IssuerSigningKey = new SymmetricSecurityKey(key)
+                IssuerSigningKey = new SymmetricSecurityKey(key),
+
+                RoleClaimType = ClaimTypes.Role
             };
         });
 

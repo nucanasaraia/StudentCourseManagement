@@ -7,7 +7,7 @@ namespace StudentCourseManagement.Services.Interfaces
 {
     public interface IEnrollmentService
     {
-        Task<ApiResponse<EnrollmentDto>> CreateEnrollment(AddEnrollment request);
-        Task<ApiResponse<List<CourseDto>>> GetCoursesByStudentId(int id);
+        Task<ApiResponse<EnrollmentDto>> CreateEnrollment(int userId, int courseId);
+        Task<ApiResponse<List<CourseDto>>> GetCoursesByUserId(int userId);
     }
 }

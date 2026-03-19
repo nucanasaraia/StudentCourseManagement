@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using StudentCourseManagement.CORE;
 using StudentCourseManagement.Data;
 using StudentCourseManagement.DTOs;
+using StudentCourseManagement.Enum;
 using StudentCourseManagement.Models;
 using StudentCourseManagement.Services.Interfaces;
 using System.Net;
@@ -13,33 +14,34 @@ public class AuthService : IAuthService
     private readonly DataContext _context;
     private readonly ITokenService _tokenService;
     private readonly IEmailService _emailService;
-    private readonly PasswordHasher<Student> _passwordHasher;
+    private readonly PasswordHasher<User> _passwordHasher;
 
     public AuthService(DataContext context, ITokenService tokenService, IEmailService emailService)
     {
         _context = context;
         _tokenService = tokenService;
         _emailService = emailService;
-        _passwordHasher = new PasswordHasher<Student>();
+        _passwordHasher = new PasswordHasher<User>();
     }
 
     // REGISTER
     public async Task<ApiResponse<string>> Register(RegisterDto dto)
     {
         var email = dto.Email.Trim().ToLower();
-        if (await _context.Students.AnyAsync(x => x.Email == email))
+        if (await _context.Users.AnyAsync(x => x.Email == email))
             return Error<string>("Email already exists");
 
-        var user = new Student
+        var user = new User
         {
             Username = dto.Username,
             Email = email,
             PasswordHash = _passwordHasher.HashPassword(null, dto.Password),
+            Role = USER_ROLE.STUDENT,
             VerificationCode = GenerateVerificationCode(),
             VerificationCodeExpires = DateTime.UtcNow.AddMinutes(10)
         };
 
-        _context.Students.Add(user);
+        _context.Users.Add(user);
         await _context.SaveChangesAsync();
 
         var emailResult = await _emailService.SendVerificationCodeAsync(user.Email, user.Username, user.VerificationCode);
@@ -53,8 +55,8 @@ public class AuthService : IAuthService
     public async Task<ApiResponse<string>> VerifyEmail(VerifyEmailDto dto)
     {
         var email = dto.Email.Trim().ToLower();
-        var user = await _context.Students.FirstOrDefaultAsync(x => x.Email == email);
-
+        var user = await _context.Users.FirstOrDefaultAsync(x => x.Email == email);
+            
         if (user == null)
             return Error<string>("Invalid request");
 
@@ -84,7 +86,7 @@ public class AuthService : IAuthService
     public async Task<ApiResponse<UserToken>> Login(LoginDto dto)
     {
         var username = dto.Username.Trim().ToLower();
-        var user = await _context.Students.FirstOrDefaultAsync(x => x.Username.ToLower() == username);
+        var user = await _context.Users.FirstOrDefaultAsync(x => x.Username.ToLower() == username);
 
         if (user == null || !user.EmailVerified)
             return Error<UserToken>("Invalid credentials");
@@ -102,14 +104,14 @@ public class AuthService : IAuthService
     public async Task<ApiResponse<UserToken>> RefreshToken(string refreshToken)
     {
         var hash = _tokenService.HashToken(refreshToken);
-        var token = await _context.RefreshTokens.Include(x => x.Student)
+        var token = await _context.RefreshTokens.Include(x => x.User)
             .FirstOrDefaultAsync(x => x.TokenHash == hash && !x.IsRevoked && x.ExpiresAt > DateTime.UtcNow);
 
         if (token == null)
             return Error<UserToken>("Invalid refresh token");
 
         token.IsRevoked = true;
-        var tokens = await GenerateTokens(token.Student);
+        var tokens = await GenerateTokens(token.User);
         await _context.SaveChangesAsync();
         return Success(tokens);
     }
@@ -118,7 +120,7 @@ public class AuthService : IAuthService
     public async Task<ApiResponse<string>> ForgotPassword(string email)
     {
         email = email.Trim().ToLower();
-        var user = await _context.Students.FirstOrDefaultAsync(x => x.Email == email);
+        var user = await _context.Users.FirstOrDefaultAsync(x => x.Email == email);
         if (user == null)
             return Success("If this email exists, a reset link was sent");
 
@@ -136,7 +138,7 @@ public class AuthService : IAuthService
     public async Task<ApiResponse<string>> ResetPassword(ResetPasswordDto dto)
     {
         var hash = _tokenService.HashToken(dto.Token);
-        var user = await _context.Students.FirstOrDefaultAsync(x =>
+        var user = await _context.Users.FirstOrDefaultAsync(x =>
             x.PasswordResetTokenHash == hash &&
             x.PasswordResetTokenExpires > DateTime.UtcNow);
 
@@ -152,7 +154,7 @@ public class AuthService : IAuthService
     }
  
     // HELPERS
-    private async Task<UserToken> GenerateTokens(Student user)
+    private async Task<UserToken> GenerateTokens(User user)
     {
         var accessToken = _tokenService.GenerateAccessToken(user);
         var refreshToken = _tokenService.GenerateRefreshToken();
@@ -161,7 +163,7 @@ public class AuthService : IAuthService
         _context.RefreshTokens.Add(new RefreshToken
         {
             TokenHash = hash,
-            StudentId = user.Id,
+            UserId = user.Id,
             ExpiresAt = DateTime.UtcNow.AddDays(7)
         });
 
