@@ -9,9 +9,9 @@ namespace StudentCourseManagement.Helper
     {
         public MappingProfile()
         {   // Students
-            CreateMap<Student, UserDto>().ReverseMap();
+            CreateMap<User, UserDto>().ReverseMap();
             //.ForMember(dest => dest.Enrollments, opt => opt.MapFrom(src => src.Enrollments ?? new List<Enrollment>()));
-            CreateMap<AddUser, Student>();
+            CreateMap<AddUser, User>();
 
             // Courses
             CreateMap<Course, CourseDto>().ReverseMap();

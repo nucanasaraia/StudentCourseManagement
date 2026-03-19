@@ -26,14 +26,19 @@ namespace StudentCourseManagement.Services.Implementations
 
         public async Task<ApiResponse<UserDto>> CreateUser(AddUser request)
         {
+            var exists = await _context.Users.AnyAsync(x => x.Email == request.Email);
+            if (exists)
+                return ApiResponseFactory.Conflict<UserDto>("Email already exists");
+
             var user = new User
             {
                 Username = request.Username,
                 Email = request.Email,
-                PasswordHash = _passwordHasher.HashPassword(null, request.Password),
-                Role = request.Role, 
-                EmailVerified = true 
+                Role = request.Role,
+                EmailVerified = true
             };
+
+            user.PasswordHash = _passwordHasher.HashPassword(user, request.Password);
 
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
@@ -42,7 +47,7 @@ namespace StudentCourseManagement.Services.Implementations
 
             return ApiResponseFactory.Success(
                 data,
-                "user created successfully",
+                "User created successfully",
                 HttpStatusCode.Created
             );
         }
@@ -74,16 +79,16 @@ namespace StudentCourseManagement.Services.Implementations
 
         public async Task<ApiResponse<List<UserDto>>> GetUsers()
         {
-            var user = await _context.Users.ToListAsync();
+            var users = await _context.Users.ToListAsync();
 
-            var data = _mapper.Map<List<UserDto>>(user);
+            var data = _mapper.Map<List<UserDto>>(users);
 
             return ApiResponseFactory.Success(data);
         }
 
         public async Task<ApiResponse<UserDto>> UpdateUser(int id, AddUser request)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(s => s.Id == id);
+            var user = await _context.Users.FindAsync(id); 
 
             if (user == null)
                 return ApiResponseFactory.NotFound<UserDto>($"user with Id {id} does not exist");
