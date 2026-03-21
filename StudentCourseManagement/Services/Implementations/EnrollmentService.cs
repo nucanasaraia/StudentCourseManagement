@@ -14,36 +14,57 @@ namespace StudentCourseManagement.Services.Implementations
     {
         private readonly DataContext _context;
         private readonly IMapper _mapper;
+        private readonly ILogger<EnrollmentService> _logger;
 
-        public EnrollmentService(DataContext context, IMapper mapper)
+        public EnrollmentService(DataContext context, IMapper mapper, ILogger<EnrollmentService> logger)
         {
             _context = context;
             _mapper = mapper;
+            _logger = logger;
         }
 
         public async Task<ApiResponse<EnrollmentDto>> CreateEnrollment(int userId, int courseId)
         {
-            var exists = await _context.Enrollments
-                .AnyAsync(e => e.UserId == userId && e.CourseId == courseId);
+            _logger.LogInformation("User {UserId} enrolling in course {CourseId}", userId, courseId);
 
-            if (exists)
-                return ApiResponseFactory.Fail<EnrollmentDto>("Already enrolled", HttpStatusCode.BadRequest);
-
-            var courseExists = await _context.Courses.AnyAsync(c => c.Id == courseId);
-            if (!courseExists)
-                return ApiResponseFactory.NotFound<EnrollmentDto>("Course not found");
-
-            var enrollment = new Enrollment
+            try
             {
-                UserId = userId,
-                CourseId = courseId
-            };
+                var exists = await _context.Enrollments
+                    .AnyAsync(e => e.UserId == userId && e.CourseId == courseId);
 
-            _context.Enrollments.Add(enrollment);
-            await _context.SaveChangesAsync();
+                if (exists)
+                {
+                    _logger.LogWarning("User {UserId} already enrolled in course {CourseId}", userId, courseId);
+                    return ApiResponseFactory.Fail<EnrollmentDto>("Already enrolled", HttpStatusCode.BadRequest);
+                }
 
-            var data = _mapper.Map<EnrollmentDto>(enrollment);
-            return ApiResponseFactory.Success(data, "Enrollment created successfully", HttpStatusCode.Created);
+                var courseExists = await _context.Courses.AnyAsync(c => c.Id == courseId);
+
+                if (!courseExists)
+                {
+                    _logger.LogWarning("Course {CourseId} not found for user {UserId}", courseId, userId);
+                    return ApiResponseFactory.NotFound<EnrollmentDto>("Course not found");
+                }
+
+                var enrollment = new Enrollment
+                {
+                    UserId = userId,
+                    CourseId = courseId
+                };
+
+                _context.Enrollments.Add(enrollment);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Enrollment created successfully for user {UserId} in course {CourseId}", userId, courseId);
+
+                var data = _mapper.Map<EnrollmentDto>(enrollment);
+                return ApiResponseFactory.Success(data, "Enrollment created successfully", HttpStatusCode.Created);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Enrollment failed for user {UserId}", userId);
+                throw;
+            }
         }
 
         public async Task<ApiResponse<List<CourseDto>>> GetCoursesByUserId(int userId)

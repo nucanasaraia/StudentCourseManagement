@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Text.Json;
+using Serilog;
 using StudentCourseManagement.CORE;
 
 namespace StudentCourseManagement.Middleware
@@ -19,8 +20,10 @@ namespace StudentCourseManagement.Middleware
             {
                 await _next(context);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Log.Error(ex, "Unhandled exception occurred");
+
                 context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
                 context.Response.ContentType = "application/json";
 
