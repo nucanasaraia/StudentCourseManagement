@@ -51,9 +51,10 @@ public class AuthService : IAuthService
             await _context.SaveChangesAsync();
 
             var emailResult = await _emailService.SendVerificationCodeAsync(user.Email, user.Username, user.VerificationCode);
+            
             if (emailResult.Status != HttpStatusCode.OK)
             {
-                _userLogger.LogError(user, null!, "Failed to send verification email.");
+                _userLogger.LogError(user, null, "Failed to send verification email.");
                 return Error<string>("Failed to send verification email");
             }
 

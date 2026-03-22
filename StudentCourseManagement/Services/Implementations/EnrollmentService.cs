@@ -69,18 +69,30 @@ namespace StudentCourseManagement.Services.Implementations
 
         public async Task<ApiResponse<List<CourseDto>>> GetCoursesByUserId(int userId)
         {
-            var exists = await _context.Users.AnyAsync(s => s.Id == userId);
-            if (!exists)
-                return ApiResponseFactory.NotFound<List<CourseDto>>($"Student with Id {userId} does not exist");
+            _logger.LogInformation("Fetching Courses by UserId {UserId}", userId);
+            try
+            {
+                var exists = await _context.Users.AnyAsync(s => s.Id == userId);
+                if (!exists)
+                {
+                    _logger.LogWarning("Student with Id {UserId} does not exist", userId);
+                    return ApiResponseFactory.NotFound<List<CourseDto>>($"Student with Id {userId} does not exist");
+                }
 
-            var courses = await _context.Enrollments
-                .Where(e => e.UserId == userId)
-                .Include(e => e.Course)
-                .Select(e => e.Course)
-                .ToListAsync();
+                var courses = await _context.Enrollments
+                    .Where(e => e.UserId == userId)
+                    .Include(e => e.Course)
+                    .Select(e => e.Course)
+                    .ToListAsync();
 
-            var data = _mapper.Map<List<CourseDto>>(courses);
-            return ApiResponseFactory.Success(data, "Courses retrieved successfully");
+                var data = _mapper.Map<List<CourseDto>>(courses);
+                return ApiResponseFactory.Success(data, "Courses retrieved successfully");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching courses for user {UserId}", userId);
+                throw;
+            }
         }
     }
 }

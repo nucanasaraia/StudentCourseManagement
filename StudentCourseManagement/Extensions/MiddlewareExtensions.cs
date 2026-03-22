@@ -7,6 +7,7 @@ namespace StudentCourseManagement.Extensions
         public static void ConfigureMiddleware(this WebApplication app)
         {
             app.UseMiddleware<GlobalExceptionMiddleware>();
+            app.UseMiddleware<RequestLoggingMiddleware>();
 
             if (app.Environment.IsDevelopment())
             {

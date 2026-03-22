@@ -16,89 +16,156 @@ namespace StudentCourseManagement.Services.Implementations
         private readonly DataContext _context;
         private readonly IMapper _mapper;
         private readonly PasswordHasher<User> _passwordHasher;
+        private readonly ILogger<UserService> _logger;
 
-        public UserService(DataContext context, IMapper mapper)
+        public UserService(DataContext context, IMapper mapper, ILogger<UserService> logger)
         {
             _context = context;
             _mapper = mapper;
             _passwordHasher = new PasswordHasher<User>();
+            _logger = logger;
         }
 
         public async Task<ApiResponse<UserDto>> CreateUser(AddUser request)
         {
-            var exists = await _context.Users.AnyAsync(x => x.Email == request.Email);
-            if (exists)
-                return ApiResponseFactory.Conflict<UserDto>("Email already exists");
-
-            var user = new User
+              _logger.LogInformation("Creating user with email {Email}", request.Email);
+            try
             {
-                Username = request.Username,
-                Email = request.Email,
-                Role = request.Role,
-                EmailVerified = true
-            };
+                var exists = await _context.Users.AnyAsync(x => x.Email == request.Email);
+                if (exists)
+                {
+                    _logger.LogWarning("User creation failed. Email already exists: {Email}", request.Email);
+                    return ApiResponseFactory.Conflict<UserDto>("Email already exists");
+                }
 
-            user.PasswordHash = _passwordHasher.HashPassword(user, request.Password);
+                var user = new User
+                {
+                    Username = request.Username,
+                    Email = request.Email,
+                    Role = request.Role,
+                    EmailVerified = true
+                };
 
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
+                user.PasswordHash = _passwordHasher.HashPassword(user, request.Password);
 
-            var data = _mapper.Map<UserDto>(user);
+                _context.Users.Add(user);
+                await _context.SaveChangesAsync();
 
-            return ApiResponseFactory.Success(
-                data,
-                "User created successfully",
-                HttpStatusCode.Created
-            );
+                _logger.LogInformation("User created successfully with Id {UserId}", user.Id);
+
+                var data = _mapper.Map<UserDto>(user);
+
+                return ApiResponseFactory.Success(
+                    data,
+                    "User created successfully",
+                    HttpStatusCode.Created
+                );
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while creating user with email {Email}", request.Email);
+                throw;
+            }
         }
 
         public async Task<ApiResponse<bool>> DeleteUser(int id)
-        {
-            var user = await _context.Users.FirstOrDefaultAsync(s => s.Id == id);
+        {    
+            _logger.LogInformation("Deleting user with Id {UserId}", id);
+            try
+            {
+                var user = await _context.Users.FirstOrDefaultAsync(s => s.Id == id);
 
-            if (user == null)
-                return ApiResponseFactory.NotFound<bool>($"user with Id {id} does not exist");
+                if (user == null)
+                {
+                    _logger.LogWarning("User deletion failed. User with Id {UserId} not found", id);
+                    return ApiResponseFactory.NotFound<bool>($"user with Id {id} does not exist");
+                }
+                   
 
-            _context.Users.Remove(user);
-            await _context.SaveChangesAsync();
+                _context.Users.Remove(user);
+                await _context.SaveChangesAsync();
 
-            return ApiResponseFactory.Success(true, $"user with Id {id} deleted successfully");
+                _logger.LogInformation("User with Id {UserId} deleted successfully", id);
+                return ApiResponseFactory.Success(true, $"user with Id {id} deleted successfully");
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError(ex, "Error while deleting user with Id {UserId}", id);
+                throw;
+            }
         }
 
         public async Task<ApiResponse<UserDto>> GetUserById(int id)
         {
-            var user = await _context.Users.FindAsync(id);
+            _logger.LogInformation("Fetching user with id {UserId}", id);
+            try
+            {
+                var user = await _context.Users.FindAsync(id);
 
-            if (user == null)
-                return ApiResponseFactory.NotFound<UserDto>($"user with Id {id} does not exist");
+                if (user == null)
+                {
+                    _logger.LogWarning("User not found with Id {UserId}", id);
+                    return ApiResponseFactory.NotFound<UserDto>($"user with Id {id} does not exist");
+                }
 
-            var data = _mapper.Map<UserDto>(user);
+                var data = _mapper.Map<UserDto>(user);
 
-            return ApiResponseFactory.Success(data);
+                return ApiResponseFactory.Success(data);
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError(ex, "Error while fetching user with Id {UserId}", id);
+                throw;
+            }
         }
 
         public async Task<ApiResponse<List<UserDto>>> GetUsers()
         {
-            var users = await _context.Users.ToListAsync();
+            _logger.LogInformation("Fetching all users");
+            
+            try
+            {
+                var users = await _context.Users.ToListAsync();
 
-            var data = _mapper.Map<List<UserDto>>(users);
+                var data = _mapper.Map<List<UserDto>>(users);
 
-            return ApiResponseFactory.Success(data);
+                _logger.LogInformation("Fetched {Count} users", data.Count);
+                return ApiResponseFactory.Success(data);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while fetching users");
+                throw;
+            }
         }
 
         public async Task<ApiResponse<UserDto>> UpdateUser(int id, AddUser request)
         {
-            var user = await _context.Users.FindAsync(id); 
+            _logger.LogInformation("Updating user with Id {UserId}", id);
+            try
+            {
+                var user = await _context.Users.FindAsync(id);
 
-            if (user == null)
-                return ApiResponseFactory.NotFound<UserDto>($"user with Id {id} does not exist");
+                if (user == null)
+                {
+                    _logger.LogWarning("User update failed. User with Id {UserId} not found", id);
+                    return ApiResponseFactory.NotFound<UserDto>($"user with Id {id} does not exist");
+                }
 
-            _mapper.Map(request, user);
-            await _context.SaveChangesAsync();
+                _mapper.Map(request, user);
+                await _context.SaveChangesAsync();
 
-            var data = _mapper.Map<UserDto>(user);
+                _logger.LogInformation("User updated successfully with Id {UserId}", id);
 
-            return ApiResponseFactory.Success(data, $"user with Id {id} updated successfully");
+                var data = _mapper.Map<UserDto>(user);
+
+                return ApiResponseFactory.Success(data, $"user with Id {id} updated successfully");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error while updating user with Id {UserId}", id);
+                throw;
+            }
         }
     }
 }
