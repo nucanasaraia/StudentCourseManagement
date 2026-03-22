@@ -13,6 +13,7 @@ namespace StudentCourseManagement.Extensions
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<IEmailService, EmailService>();
+            services.AddScoped<IUserLogger, UserLoggerService>();
         }
     }
 }

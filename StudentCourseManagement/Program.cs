@@ -4,12 +4,9 @@ using StudentCourseManagement.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Serilog
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
-    .Enrich.FromLogContext()
     .CreateLogger();
-
 builder.Host.UseSerilog();
 
 // Services
@@ -26,8 +23,6 @@ builder.Services.Configure<SmtpSettings>(
 
 var app = builder.Build();
 
-// Logs every HTTP request
-app.UseSerilogRequestLogging();
 
 // Middleware
 app.UseAuthentication();
