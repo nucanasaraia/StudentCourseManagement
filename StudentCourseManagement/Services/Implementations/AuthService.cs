@@ -248,7 +248,7 @@ public class AuthService : IAuthService
     }
 
     // HELPERS
-    private async Task<UserToken> GenerateTokens(User user)
+    private Task<UserToken> GenerateTokens(User user)
     {
         var accessToken = _tokenService.GenerateAccessToken(user);
         var refreshToken = _tokenService.GenerateRefreshToken();
@@ -258,15 +258,16 @@ public class AuthService : IAuthService
         {
             TokenHash = hash,
             UserId = user.Id,
-            ExpiresAt = DateTime.UtcNow.AddDays(7)
+            ExpiresAt = DateTime.UtcNow.AddDays(7),
+            User = user
         });
 
-        return new UserToken
+        return Task.FromResult(new UserToken
         {
             Token = accessToken,
             RefreshToken = refreshToken,
             ExpiresAt = DateTime.UtcNow.AddMinutes(15)
-        };
+        });
     }
 
     private static string GenerateSecureToken() => Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
