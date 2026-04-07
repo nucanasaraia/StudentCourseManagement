@@ -1,32 +1,32 @@
 # 🎓 Student Course Management Platform
 
-A backend system designed to handle the **full lifecycle of student accounts** in an academic environment — from secure registration and email verification to authentication and course access.
+A backend system designed to manage the **full lifecycle of users and courses in an academic environment** — including secure authentication, role-based access control, and student enrollment.
 
-This project focuses on **identity management, security, and user workflows**, simulating how modern platforms manage users and protected resources.
+This project simulates how real-world platforms handle **user identity, permissions, and course interactions**.
 
 ---
 
 ## 🎯 Purpose of the Project
 
-This project was built to demonstrate how a real-world system handles:
+This project focuses on building a **secure and structured backend system** that demonstrates:
 
-* Secure user authentication and authorization
-* Email verification and password recovery flows
-* Token-based session management
-* Role-based access control
+* Authentication & authorization flows
+* Role-based permissions (Admin, Teacher, Student)
+* Student enrollment into courses
+* Clean architecture and maintainable code
 
-It emphasizes **security, reliability, and clean architecture**, rather than just CRUD operations.
+It emphasizes **security, scalability, and real-world backend patterns**.
 
 ---
 
 ## ✨ Core Features
 
 * 🔐 JWT Authentication & Role-Based Authorization
-* 📧 Email verification with time-limited codes
-* 🔁 Refresh tokens stored in HttpOnly cookies
-* 🔑 Forgot & reset password flow
-* 👥 Role system (Admin / Student)
-* 📚 Course management (Admin-controlled)
+* 👥 Multiple user roles (Admin, Teacher, Student)
+* 📧 Email verification & password reset
+* 🔁 Refresh tokens via HttpOnly cookies
+* 📚 Course creation and management
+* 🎓 Student enrollment system
 * ⚠️ Global error handling & structured logging
 * 📦 Standardized API responses
 * 🧩 Clean layered architecture
@@ -38,30 +38,52 @@ It emphasizes **security, reliability, and clean architecture**, rather than jus
 
 ### Admin
 
-* Full control over users and courses
-* Create, update, and delete courses
-* Manage platform data
+* Full system control
+* Manage users and courses
+* Oversee platform data
+
+### Teacher
+
+* Create and manage courses
+* Update course content
+* Delete courses they manage
 
 ### Student
 
-* Register and verify account via email
-* Log in securely
-* Access available courses
+* Register and verify account
+* Enroll in courses
+* View enrolled courses
 * Manage personal profile
 
 ---
 
 ## 🔐 Authentication Flow (Key Highlight)
 
-This project implements a **complete authentication system**:
+The system implements a **complete authentication lifecycle**:
 
-1. User registers → receives verification code via email
+1. User registers → receives email verification code
 2. Email must be verified before login
 3. Login returns JWT access token + refresh token (HttpOnly cookie)
-4. Access token expires → refreshed securely via cookie
-5. Password reset flow uses secure, time-limited tokens
+4. Access token expires → refreshed securely
+5. Password reset via secure, time-limited token
 
-This mirrors how **production-grade systems handle identity and security**.
+This reflects **production-grade authentication systems**.
+
+---
+
+## 🎓 Enrollment System
+
+Students can:
+
+* Enroll in courses
+* Retrieve their enrolled courses
+
+```http
+POST /api/enrollment/enroll/{courseId}
+GET /api/enrollment/my-courses
+```
+
+> 🔒 Enrollment actions are restricted to **authenticated students only**.
 
 ---
 
@@ -82,20 +104,20 @@ This mirrors how **production-grade systems handle identity and security**.
 * xUnit + Moq (unit testing)
 * Rate Limiting
 * User Secrets
-* SMTP (Gmail) for email services
+* SMTP (Gmail)
 * Custom API response factory
 
 ---
 
 ## 🧠 Architecture Overview
 
-The project follows a clean and maintainable structure:
+The project follows a clean structure:
 
 * **Controllers** → Handle HTTP requests
-* **Services** → Contain business logic (Auth, User, Course)
-* **Data Access Layer** → Database interaction via EF Core
-* **DTOs** → Safe data transfer between layers
-* **Core Utilities** → Shared responses, enums, helpers
+* **Services** → Business logic (Auth, User, Course, Enrollment)
+* **Data Access Layer** → EF Core database interaction
+* **DTOs** → Safe data transfer
+* **Core Utilities** → Shared responses & helpers
 
 ---
 
@@ -104,13 +126,11 @@ The project follows a clean and maintainable structure:
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/nucanasaraia/StudentCourseManagement.git
-cd StudentCourseManagement
+git clone https://github.com/yourusername/student-course-management.git
+cd student-course-management
 ```
 
 ### 2. Configure database
-
-Update your `appsettings.json`:
 
 ```json
 "ConnectionStrings": {
@@ -148,44 +168,52 @@ After running the project, open:
 https://localhost:{port}/swagger
 ```
 
-Use Swagger UI to explore and test endpoints.
+---
+
+## 🔐 Authentication Endpoints
+
+| Method | Endpoint                    | Description       |
+| ------ | --------------------------- | ----------------- |
+| POST   | `/api/auth/register`        | Register new user |
+| POST   | `/api/auth/verify-email`    | Verify email      |
+| POST   | `/api/auth/login`           | Login user        |
+| POST   | `/api/auth/refresh-token`   | Refresh token     |
+| POST   | `/api/auth/forgot-password` | Request reset     |
+| POST   | `/api/auth/reset-password`  | Reset password    |
 
 ---
 
-## 🔐 Key Endpoints (Auth Focus)
+## 👥 User Management (Admin Only)
 
-| Method | Endpoint                    | Description              |
-| ------ | --------------------------- | ------------------------ |
-| POST   | `/api/auth/register`        | Register new student     |
-| POST   | `/api/auth/verify-email`    | Verify email with code   |
-| POST   | `/api/auth/login`           | Login and receive tokens |
-| POST   | `/api/auth/refresh-token`   | Refresh access token     |
-| POST   | `/api/auth/forgot-password` | Request reset link       |
-| POST   | `/api/auth/reset-password`  | Reset password           |
+| Method | Endpoint         |
+| ------ | ---------------- |
+| GET    | `/api/user`      |
+| GET    | `/api/user/{id}` |
+| POST   | `/api/user`      |
+| PUT    | `/api/user/{id}` |
+| DELETE | `/api/user/{id}` |
 
 ---
 
 ## 📚 Course Management
 
-| Method | Endpoint            | Access  |
-| ------ | ------------------- | ------- |
-| GET    | `/api/courses`      | Student |
-| POST   | `/api/courses`      | Admin   |
-| PUT    | `/api/courses/{id}` | Admin   |
-| DELETE | `/api/courses/{id}` | Admin   |
+| Method | Endpoint           | Access          |
+| ------ | ------------------ | --------------- |
+| GET    | `/api/course`      | Public          |
+| POST   | `/api/course`      | Admin / Teacher |
+| PUT    | `/api/course/{id}` | Admin / Teacher |
+| DELETE | `/api/course/{id}` | Admin / Teacher |
 
 ---
 
 ## 🧪 Testing
 
-Unit tests are written using **xUnit** and **Moq**, focusing on core authentication logic.
+Unit tests focus on authentication and service logic:
 
-### Covered scenarios:
-
-* Registration (valid / duplicate email)
-* Email verification (valid / expired / incorrect code)
-* Login (valid / invalid / unverified user)
-* Password reset flow
+* Registration & validation
+* Email verification
+* Login scenarios
+* Password reset
 * Token handling
 
 Run tests:
@@ -200,17 +228,18 @@ dotnet test
 
 🔗 https://your-deployment-url.up.railway.app/swagger/index.html
 
-> ⚠️ Email verification is auto-confirmed in the live demo. Full functionality works locally with SMTP configuration.
+> ⚠️ Email verification is auto-confirmed in demo mode.
 
 ---
 
 ## 🚀 Future Improvements
 
+* Course ownership validation (teacher-specific control)
 * Student progress tracking
-* Role expansion (Instructor role)
+* Instructor dashboard
 * File uploads (course materials)
 * Real-time notifications (SignalR)
-* Integration testing
+* Integration tests
 
 ---
 
@@ -218,19 +247,19 @@ dotnet test
 
 * ✅ Fully functional backend API
 * ✅ Secure authentication system
-* ✅ Email verification & password recovery
-* ✅ Unit tested core services
+* ✅ Multi-role authorization
+* ✅ Enrollment system implemented
 * ✅ Production-style architecture
 
 ---
 
 ## 💡 Final Notes
 
-This project is focused on **building a secure and realistic authentication system**, reflecting how modern applications manage users, sessions, and sensitive operations.
+This project demonstrates the ability to build a **secure, multi-role backend system** with real-world features such as authentication flows, role-based access control, and user-course relationships.
 
-It demonstrates a strong understanding of:
+It reflects practical backend engineering skills including:
 
-* Authentication flows
 * API design
 * Security best practices
-* Maintainable backend architecture
+* Clean architecture
+* Scalable service structure
