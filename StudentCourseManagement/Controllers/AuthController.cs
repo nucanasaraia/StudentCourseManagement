@@ -8,7 +8,17 @@ using System.Net;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
-
+    private void SetRefreshTokenCookie(string refreshToken)
+    {
+        var options = new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.Strict,
+            Expires = DateTime.UtcNow.AddDays(7)
+        };
+        Response.Cookies.Append("refreshToken", refreshToken, options);
+    }
     public AuthController(IAuthService authService)
     {
         _authService = authService;
@@ -35,13 +45,27 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Login(LoginDto dto)
     {
         var result = await _authService.Login(dto);
+        if (result.Data?.RefreshToken != null)
+        {
+            SetRefreshTokenCookie(result.Data.RefreshToken);
+            result.Data.RefreshToken = null; 
+        }
         return StatusCode((int)result.Status, result);
     }
 
     [HttpPost("refresh-token")]
-    public async Task<IActionResult> Refresh(RefreshTokenDto dto)
+    public async Task<IActionResult> Refresh()
     {
-        var result = await _authService.RefreshToken(dto.RefreshToken);
+        var token = Request.Cookies["refreshToken"];
+        if (string.IsNullOrEmpty(token))
+            return Unauthorized("Missing refresh token cookie.");
+
+        var result = await _authService.RefreshToken(token);
+        if (result.Data?.RefreshToken != null)
+        {
+            SetRefreshTokenCookie(result.Data.RefreshToken);
+            result.Data.RefreshToken = null;
+        }
         return StatusCode((int)result.Status, result);
     }
 

@@ -5,9 +5,9 @@ namespace StudentCourseManagement.Models
     public class User
     {
         public int Id { get; set; }
-        public string Username { get; set; }
-        public string Email { get; set; }
-        public string PasswordHash { get; set; }
+        public required string Username { get; set; }
+        public required string Email { get; set; }
+        public required string PasswordHash { get; set; }
         public USER_ROLE Role { get; set; }
         public bool EmailVerified { get; set; }
 
@@ -21,7 +21,6 @@ namespace StudentCourseManagement.Models
         public DateTime? PasswordResetTokenExpires { get; set; }
 
         public List<RefreshToken> RefreshTokens { get; set; } = new();
-
         public List<Enrollment> Enrollments { get; set; } = new();
     }
 }

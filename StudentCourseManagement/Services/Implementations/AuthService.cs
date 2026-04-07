@@ -42,7 +42,7 @@ public class AuthService : IAuthService
                 Username = dto.Username,
                 Email = email,
                 PasswordHash = _passwordHasher.HashPassword(null, dto.Password),
-                Role = USER_ROLE.ADMIN,
+                Role = USER_ROLE.STUDENT,
                 VerificationCode = GenerateVerificationCode(),
                 VerificationCodeExpires = DateTime.UtcNow.AddMinutes(10)
             };

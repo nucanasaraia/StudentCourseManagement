@@ -42,11 +42,10 @@ namespace StudentCourseManagement.Services.Implementations
                 {
                     Username = request.Username,
                     Email = request.Email,
+                    PasswordHash = _passwordHasher.HashPassword(null!, request.Password),
                     Role = request.Role,
                     EmailVerified = true
                 };
-
-                user.PasswordHash = _passwordHasher.HashPassword(user, request.Password);
 
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync();
