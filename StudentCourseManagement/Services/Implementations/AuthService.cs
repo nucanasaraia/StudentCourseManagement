@@ -50,16 +50,19 @@ public class AuthService : IAuthService
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            var emailResult = await _emailService.SendVerificationCodeAsync(user.Email, user.Username, user.VerificationCode);
-            
-            if (emailResult.Status != HttpStatusCode.OK)
-            {
-                _userLogger.LogError(user, null, "Failed to send verification email.");
-                return Error<string>("Failed to send verification email");
-            }
+            // Email service disabled - auto verify for demo purposes
+            user.EmailVerified = true;
+            await _context.SaveChangesAsync();
+
+            // var emailResult = await _emailService.SendVerificationCodeAsync(user.Email, user.Username, user.VerificationCode);
+            // if (emailResult.Status != HttpStatusCode.OK)
+            // {
+            //     _userLogger.LogError(user, null, "Failed to send verification email.");
+            //     return Error<string>("Failed to send verification email");
+            // }
 
             _userLogger.LogInfo(user, "User registered successfully.");
-            return Success("Registration successful. Verify email.");
+            return Success("Registration successful.");
         }
         catch (Exception ex)
         {
@@ -202,7 +205,7 @@ public class AuthService : IAuthService
             user.PasswordResetTokenExpires = DateTime.UtcNow.AddHours(1);
 
             var resetLink = $"https://yourfrontend.com/reset-password?token={rawToken}";
-            await _emailService.SendPasswordResetLinkAsync(user.Email, user.Username, resetLink);
+           // await _emailService.SendPasswordResetLinkAsync(user.Email, user.Username, resetLink);
             await _context.SaveChangesAsync();
 
             _userLogger.LogInfo(user, "Password reset requested.");
