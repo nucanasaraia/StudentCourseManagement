@@ -1,5 +1,7 @@
+using Microsoft.EntityFrameworkCore;
 using Serilog;
 using StudentCourseManagement.Configurations;
+using StudentCourseManagement.Data;
 using StudentCourseManagement.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -29,5 +31,12 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.ConfigureMiddleware();
+
+// Auto-apply migrations when app starts
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<DataContext>();
+    db.Database.Migrate();
+}
 
 app.Run();
