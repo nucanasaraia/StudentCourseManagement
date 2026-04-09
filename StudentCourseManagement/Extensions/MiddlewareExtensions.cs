@@ -9,11 +9,8 @@ namespace StudentCourseManagement.Extensions
             app.UseMiddleware<GlobalExceptionMiddleware>();
             app.UseMiddleware<RequestLoggingMiddleware>();
 
-            if (app.Environment.IsDevelopment())
-            {
                 app.UseSwagger();
                 app.UseSwaggerUI();
-            }
 
             app.UseHttpsRedirection();
             app.MapControllers();
