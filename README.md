@@ -126,8 +126,8 @@ The project follows a clean structure:
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/yourusername/student-course-management.git
-cd student-course-management
+git clone https://github.com/nucanasaraia/StudentCourseManagement.git
+cd StudentCourseManagement
 ```
 
 ### 2. Configure database
@@ -226,9 +226,12 @@ dotnet test
 
 ## 🌐 Live Demo
 
-🔗 https://your-deployment-url.up.railway.app/swagger/index.html
+🔗 https://studentcourse-api.onrender.com/swagger/index.html
 
 > ⚠️ Email verification is auto-confirmed in demo mode.
+
+### API Overview
+<img width="1802" height="732" alt="studentCourse" src="https://github.com/user-attachments/assets/a784839f-cd03-41b9-85cc-07b9f603c9d2" />
 
 ---
 
