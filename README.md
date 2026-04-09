@@ -23,7 +23,7 @@ It emphasizes **security, scalability, and real-world backend patterns**.
 
 * 🔐 JWT Authentication & Role-Based Authorization
 * 👥 Multiple user roles (Admin, Teacher, Student)
-* 📧 Email verification & password reset
+* 📧 Email verification & password reset (auto-confirmed in demo)
 * 🔁 Refresh tokens via HttpOnly cookies
 * 📚 Course creation and management
 * 🎓 Student enrollment system
